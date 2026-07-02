@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"os"
 	"pass/encryption"
 )
@@ -63,4 +64,27 @@ func LoadVault(password, path string) (encryption.Vault, error) {
 
 	err = json.Unmarshal(plain, &v)
 	return v, err
+}
+func SaveMasterKey(filePath string) error {
+	password, err := encryption.GenerateRandomPassword(32)
+	if err != nil {
+		return err
+	}
+	key, err := base64.RawURLEncoding.DecodeString(password)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filePath, key, 0600)
+}
+func LoadMasterKey(filePath string) (string, error) {
+	key, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("master key not found")
+	}
+
+	if len(key) != 32 {
+		return "", fmt.Errorf("invalid master key length: got %d bytes, want 32", len(key))
+	}
+
+	return base64.RawURLEncoding.EncodeToString(key), nil
 }

@@ -7,32 +7,35 @@ import (
 type Command struct {
 	Name        string
 	Description string
+	Example     string
 }
 
 type App struct {
-	FilePath string
-	Version  string
-	Commands map[string]Command
+	VaultPath     string
+	MasterKeyPath string
+	Version       string
+	Commands      map[string]Command
 }
 
-func New(version string, filePath string) *App {
+func New(version, vaultPath, masterKeyPath string) *App {
 	app := &App{
-		FilePath: filePath,
-		Version:  version,
-		Commands: make(map[string]Command),
+		VaultPath:     vaultPath,
+		MasterKeyPath: masterKeyPath,
+		Version:       version,
+		Commands:      make(map[string]Command),
 	}
 
-	app.registerCommand("init", "Create a vault")
-	app.registerCommand("add", "Add new entry to vault")
-	app.registerCommand("get", "Get a credential")
-	app.registerCommand("list", "List all credentials")
-	app.registerCommand("gen", "Generate password for a service with username")
-	app.registerCommand("version", "cli version ")
-	app.registerCommand("help", "Help")
+	app.registerCommand("init", "   Create a vault", ":pass init")
+	app.registerCommand("add", "    Add new entry to vault", "pass add -u username -p password")
+	app.registerCommand("get", "    Get a credential", ":pass get servicename -u username")
+	app.registerCommand("list", "   List all credentials", ":pass list")
+	app.registerCommand("gen", "    Generate a random password for service and username", ":pass gen servicename -u username -l 12")
+	app.registerCommand("version", "cli version ", ":pass version")
+	app.registerCommand("help", "   Help", "pass help")
 
 	return app
 }
-func (a *App) Run(args []string, masterpassword string) error {
+func (a *App) Run(args []string) error {
 
 	cmd, err := a.Parse(args[1:])
 	if err != nil {
@@ -43,7 +46,7 @@ func (a *App) Run(args []string, masterpassword string) error {
 
 	case "add":
 		fmt.Println(cmd.Args)
-		err := a.Add(cmd.Args[0], cmd.Flags["u"], cmd.Flags["p"], masterpassword)
+		err := a.Add(cmd.Args[0], cmd.Flags["u"], cmd.Flags["p"])
 		if err != nil {
 			return err
 		}
@@ -53,17 +56,21 @@ func (a *App) Run(args []string, masterpassword string) error {
 		return nil
 
 	case "gen":
-		fmt.Println("service:Generator")
-		a.Gen(cmd.Args[0], cmd.Flags["u"], masterpassword, 32)
-		return nil
-	case "init":
-		err := a.InitCheck()
+		err := a.Gen(cmd.Args[0], cmd.Flags["u"], cmd.Flags["l"])
 		if err != nil {
 			return err
 		}
-		a.Init(masterpassword)
+		return nil
+	case "init":
+		err := a.Init()
+		if err != nil {
+			return err
+		}
 	case "list":
-		a.List(masterpassword)
+		err := a.List()
+		if err != nil {
+			return err
+		}
 		return nil
 	case "version":
 		fmt.Println(a.Version)
@@ -72,5 +79,6 @@ func (a *App) Run(args []string, masterpassword string) error {
 		a.Help()
 		return nil
 	}
+
 	return nil
 }

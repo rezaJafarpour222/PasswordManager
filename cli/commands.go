@@ -5,56 +5,93 @@ import (
 	"os"
 	"pass/encryption"
 	"pass/storage"
+	"strconv"
+	"sync"
 )
 
-func (a *App) registerCommand(name string, desc string) {
+func (a *App) registerCommand(name, desc, example string) {
 	a.Commands[name] = Command{
 		Name:        name,
 		Description: desc,
+		Example:     example,
 	}
 }
 func (a *App) Help() {
+
 	fmt.Println("Usage:")
-	fmt.Println("		pass <command> [option]")
-	fmt.Println()
-	fmt.Println("Commands:")
+	fmt.Println("Command  Description")
 	for _, cmd := range a.Commands {
-		fmt.Printf("		%-12s  %s\n", cmd.Name, cmd.Description)
+		fmt.Println("#====================================================================#")
+		fmt.Printf("%s  %s\n", cmd.Name, cmd.Description)
+		fmt.Printf("Example: %s\n", cmd.Example)
 	}
 }
-func (a *App) Init(masterPassword string) {
-	v := encryption.NewVault()
-	err := storage.SaveVault(v, masterPassword, a.FilePath)
-	if err != nil {
-		panic(err)
+func (a *App) Init() error {
+	var wg sync.WaitGroup
+	done := make(chan struct{})
+	wg.Add(1)
+	go Spinner(done, &wg)
+	_, err := os.Stat(a.VaultPath)
+	if err == nil {
+		return fmt.Errorf("vault does exist!")
 	}
-	fmt.Printf("Vault Created")
+	err = storage.SaveMasterKey(a.MasterKeyPath)
+	if err != nil {
+		return err
+	}
+	masterKey, err := storage.LoadMasterKey(a.MasterKeyPath)
+	if err != nil {
+		return err
+	}
+	v := encryption.NewVault()
+	err = storage.SaveVault(v, masterKey, a.VaultPath)
+	if err != nil {
+		return err
+	}
+	close(done)
+	wg.Wait()
+	fmt.Printf("%s and %s created.", a.VaultPath, a.MasterKeyPath)
+	return nil
 }
 
-func (a *App) List(masterPassword string) error {
-	v, err := storage.LoadVault(masterPassword, a.FilePath)
+func (a *App) List() error {
+
+	var wg sync.WaitGroup
+	done := make(chan struct{})
+	wg.Add(1)
+	go Spinner(done, &wg)
+	masterKey, err := storage.LoadMasterKey(a.MasterKeyPath)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	v, err := storage.LoadVault(masterKey, a.VaultPath)
+	if err != nil {
+		return err
+	}
+
+	close(done)
+	wg.Wait()
 	for _, entry := range v.Entries {
+		fmt.Println("#====================#")
 		fmt.Println("Service: ", entry.Service)
 		fmt.Println("Username: ", entry.Username)
 		fmt.Println("Password: ", entry.Password)
-		fmt.Println("#====================#")
 	}
 	return nil
 
 }
-func (a *App) InitCheck() error {
-	_, err := os.Stat(a.FilePath)
-	if err == nil {
-		return fmt.Errorf("Vault does exist!")
-	}
-	return nil
-}
 
-func (a *App) Add(service, username, password, masterPassword string) error {
-	v, err := storage.LoadVault(masterPassword, a.FilePath)
+func (a *App) Add(service, username, password string) error {
+
+	var wg sync.WaitGroup
+	done := make(chan struct{})
+	wg.Add(1)
+	go Spinner(done, &wg)
+	masterKey, err := storage.LoadMasterKey(a.MasterKeyPath)
+	if err != nil {
+		return err
+	}
+	v, err := storage.LoadVault(masterKey, a.VaultPath)
 	if err != nil {
 		return err
 	}
@@ -64,16 +101,36 @@ func (a *App) Add(service, username, password, masterPassword string) error {
 		Username: username,
 		Password: password,
 	})
+	err = storage.SaveVault(v, masterKey, a.VaultPath)
 
-	return storage.SaveVault(v, masterPassword, a.FilePath)
+	close(done)
+	wg.Wait()
+
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (a *App) Gen(service, username, masterPassword string, size int) error {
+func (a *App) Gen(service, username string, sizeStr string) error {
+
+	var wg sync.WaitGroup
+	done := make(chan struct{})
+	wg.Add(1)
+	go Spinner(done, &wg)
+
+	size, err := strconv.Atoi(sizeStr)
+	if err != nil {
+		return fmt.Errorf("length must be a number")
+	}
 	randomPassword, err := encryption.GenerateRandomPassword(size)
 	if err != nil {
 		return err
 	}
-	err = a.Add(service, username, randomPassword, masterPassword)
+	err = a.Add(service, username, randomPassword)
+
+	close(done)
+	wg.Wait()
 	if err != nil {
 		return err
 	}

@@ -14,8 +14,8 @@ const (
 	KeyLength   = 32
 	SaltLength  = 16
 	Iteration   = 5
-	Memory      = 512 * 1024
-	Parallelism = 8
+	Memory      = 2048 * 1024
+	Parallelism = 4
 )
 
 func GenerateSalt() ([]byte, error) {
