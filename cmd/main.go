@@ -6,14 +6,16 @@ import (
 	"pass/cli"
 )
 
-type Credential struct {
-	username string
-	password string
-}
+var (
+	masterPassword string
+)
+
+const VERSION string = "0.0.8"
 
 func main() {
-
-	app := cli.New("0.0.8", "Vault.json")
+	done := make(chan struct{})
+	go cli.Spinner(done)
+	app := cli.New(VERSION, "Vault.json")
 	err := app.Run(os.Args, "HARDpassword1")
 	if err != nil {
 		fmt.Println(err)
