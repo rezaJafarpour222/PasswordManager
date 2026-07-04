@@ -35,6 +35,10 @@ func (a *App) Init() error {
 	if err == nil {
 		return fmt.Errorf("vault does exist!")
 	}
+	_, err = os.Stat(a.MasterKeyPath)
+	if err == nil {
+		return fmt.Errorf("master key does exist!")
+	}
 	err = storage.SaveMasterKey(a.MasterKeyPath)
 	if err != nil {
 		return err
