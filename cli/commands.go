@@ -207,3 +207,20 @@ func (a *App) GetEntry(service string) error {
 	}
 	return nil
 }
+func (a *App) GetMasterKey() error {
+
+	_, err := os.Stat(a.MasterKeyPath)
+	if err != nil {
+		return fmt.Errorf("master key file does not exist.")
+	}
+
+	masterKey, err := storage.LoadMasterKey(a.MasterKeyPath)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("#========================================================#")
+	fmt.Println("master key: ", masterKey)
+	fmt.Println("#========================================================#")
+	return nil
+}

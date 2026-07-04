@@ -29,6 +29,7 @@ func New(version, vaultPath, masterKeyPath string) *App {
 	app.registerCommand("add", "    Add new entry to vault", "pass add -u username -p password")
 	app.registerCommand("del", " delete entry from the vault", "pass delete service")
 	app.registerCommand("get", "    Get a credential", "pass get servicename -u username")
+	app.registerCommand("key", "    Get a master key", "pass key")
 	app.registerCommand("list", "   List all credentials", "pass list")
 	app.registerCommand("gen", "    Generate a random password for service and username", "pass gen servicename -u username -l 12")
 	app.registerCommand("version", "cli version ", "pass version")
@@ -45,6 +46,11 @@ func (a *App) Run(args []string) error {
 
 	switch cmd.Name {
 
+	case "init":
+		err := a.Init()
+		if err != nil {
+			return err
+		}
 	case "add":
 		fmt.Println(cmd.Args)
 		err := a.Add(cmd.Args[0], cmd.Flags["u"], cmd.Flags["p"])
@@ -66,13 +72,14 @@ func (a *App) Run(args []string) error {
 			return err
 		}
 		return nil
-	case "init":
-		err := a.Init()
+	case "list":
+		err := a.List()
 		if err != nil {
 			return err
 		}
-	case "list":
-		err := a.List()
+
+	case "key":
+		err := a.GetMasterKey()
 		if err != nil {
 			return err
 		}
