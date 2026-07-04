@@ -6,11 +6,11 @@ import (
 	"pass/cli"
 )
 
-const VERSION string = "0.0.9"
+const VERSION string = "1.0.0"
 
 func main() {
 
-	app := cli.New(VERSION, "Vault.vault", "master.key")
+	app := cli.New(VERSION, "Vault.vault", "Master.key")
 	err := app.Run(os.Args)
 
 	if err != nil {

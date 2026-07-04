@@ -105,7 +105,7 @@ func ExportMasterKey(exportPath, masterKeyPath string) error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(exportPath+"/master.key", data, 0600)
+	err = os.WriteFile(exportPath+"/Master.key", data, 0600)
 	if err != nil {
 		return err
 	}
