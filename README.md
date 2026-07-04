@@ -15,6 +15,7 @@ A simple command-line password manager written in Go.
 ### Master Password
 
 The master password is **Automatically generated** and is required to access the vault.
+For convenience, the application can optionally persist the derived key in Master.key. This is intended for personal use
 
 ### Key Derivation
 
