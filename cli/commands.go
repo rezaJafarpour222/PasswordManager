@@ -23,7 +23,7 @@ func (a *App) Help() {
 	for _, cmd := range a.Commands {
 		fmt.Println("#====================================================================#")
 		fmt.Printf("%s  %s\n", cmd.Name, cmd.Description)
-		fmt.Printf("Example: %s\n", cmd.Example)
+		fmt.Printf("Example -> %s\n", cmd.Example)
 	}
 }
 func (a *App) Init() error {
@@ -134,5 +134,32 @@ func (a *App) Gen(service, username string, sizeStr string) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (a *App) DeleteEntry(service string) error {
+
+	var wg sync.WaitGroup
+	done := make(chan struct{})
+	wg.Add(1)
+	fmt.Println("Deleting service-> ", service)
+	go Spinner(done, &wg)
+
+	masterKey, err := storage.LoadMasterKey(a.MasterKeyPath)
+	if err != nil {
+		return err
+	}
+	v, err := storage.LoadVault(masterKey, a.VaultPath)
+	if err != nil {
+		return err
+	}
+	v.DeleteEntry(service)
+	err = storage.SaveVault(v, masterKey, a.VaultPath)
+	if err != nil {
+		return err
+	}
+
+	close(done)
+	wg.Wait()
 	return nil
 }

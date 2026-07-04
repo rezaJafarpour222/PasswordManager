@@ -25,12 +25,13 @@ func New(version, vaultPath, masterKeyPath string) *App {
 		Commands:      make(map[string]Command),
 	}
 
-	app.registerCommand("init", "   Create a vault", ":pass init")
+	app.registerCommand("init", "   Create a vault", "pass init")
 	app.registerCommand("add", "    Add new entry to vault", "pass add -u username -p password")
-	app.registerCommand("get", "    Get a credential", ":pass get servicename -u username")
-	app.registerCommand("list", "   List all credentials", ":pass list")
-	app.registerCommand("gen", "    Generate a random password for service and username", ":pass gen servicename -u username -l 12")
-	app.registerCommand("version", "cli version ", ":pass version")
+	app.registerCommand("del", " delete entry from the vault", "pass delete service")
+	app.registerCommand("get", "    Get a credential", "pass get servicename -u username")
+	app.registerCommand("list", "   List all credentials", "pass list")
+	app.registerCommand("gen", "    Generate a random password for service and username", "pass gen servicename -u username -l 12")
+	app.registerCommand("version", "cli version ", "pass version")
 	app.registerCommand("help", "   Help", "pass help")
 
 	return app
@@ -51,8 +52,11 @@ func (a *App) Run(args []string) error {
 			return err
 		}
 
-	case "get":
-		fmt.Println("service:")
+	case "del":
+		err := a.DeleteEntry(cmd.Args[0])
+		if err != nil {
+			return err
+		}
 		return nil
 
 	case "gen":
