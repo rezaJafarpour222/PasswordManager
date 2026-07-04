@@ -79,12 +79,12 @@ func (a *App) List() error {
 		fmt.Printf("Vault is empty\n")
 		return nil
 	}
-	fmt.Println("#==================================#")
+	fmt.Println("#======================================================#")
 	for _, entry := range v.Entries {
 		fmt.Println("Service: ", entry.Service)
 		fmt.Println("Username: ", entry.Username)
 		fmt.Println("Password: ", entry.Password)
-		fmt.Println("#==================================#")
+		fmt.Println("#======================================================#")
 	}
 	return nil
 
@@ -127,7 +127,10 @@ func (a *App) Gen(service, username string, sizeStr string) error {
 
 	size, err := strconv.Atoi(sizeStr)
 	if err != nil {
-		return fmt.Errorf("length must be a number")
+		return fmt.Errorf("Password length must be a number.")
+	}
+	if size > 32 {
+		return fmt.Errorf("Password length must be <=32.")
 	}
 
 	randomPassword, err := encryption.GenerateRandomPassword(size)

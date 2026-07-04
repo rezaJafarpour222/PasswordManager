@@ -7,7 +7,7 @@ import (
 
 func Confirmation(operation string, rest map[string]string) bool {
 
-	fmt.Println("#==================================#")
+	fmt.Println("#======================================================#")
 	for i, str := range rest {
 		text := strings.ToUpper(string(i[0])) + i[1:]
 		fmt.Printf("%s : %s\n", text, str)
