@@ -224,3 +224,19 @@ func (a *App) GetMasterKey() error {
 	fmt.Println("#========================================================#")
 	return nil
 }
+
+func (a *App) Export(exportPath string) error {
+	m := make(map[string]string)
+	m["vault To: "] = exportPath + "'/Vault.vault"
+	m["master key To: "] = exportPath + "/master.key"
+	Confirmation("export", m)
+	err := storage.ExportVault(exportPath, a.VaultPath)
+	if err != nil {
+		return err
+	}
+	err = storage.ExportMasterKey(exportPath, a.MasterKeyPath)
+	if err != nil {
+		return err
+	}
+	return nil
+}

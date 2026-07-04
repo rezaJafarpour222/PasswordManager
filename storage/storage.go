@@ -88,3 +88,27 @@ func LoadMasterKey(filePath string) (string, error) {
 
 	return base64.RawURLEncoding.EncodeToString(key), nil
 }
+
+func ExportVault(exportPath, vaultPath string) error {
+
+	data, err := os.ReadFile(vaultPath)
+	if err != nil {
+		return err
+	}
+	os.WriteFile(exportPath+"/Vault.vault", data, 0600)
+	fmt.Println("Vault added to: ", exportPath)
+	return nil
+}
+func ExportMasterKey(exportPath, masterKeyPath string) error {
+
+	data, err := os.ReadFile(masterKeyPath)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(exportPath+"/master.key", data, 0600)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Master added to: ", exportPath)
+	return nil
+}
