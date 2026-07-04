@@ -51,7 +51,8 @@ func (a *App) Run(args []string) error {
 		if err != nil {
 			return err
 		}
-
+	case "get":
+		return nil
 	case "del":
 		err := a.DeleteEntry(cmd.Args[0])
 		if err != nil {
