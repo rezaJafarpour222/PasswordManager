@@ -30,7 +30,7 @@ func (a *App) Init() error {
 	var wg sync.WaitGroup
 	done := make(chan struct{})
 	wg.Add(1)
-	go Spinner(done, &wg)
+	go Spinner(done, &wg, "Initializing the Vault and Master Key")
 	_, err := os.Stat(a.VaultPath)
 	if err == nil {
 		return fmt.Errorf("vault does exist!")
@@ -59,7 +59,7 @@ func (a *App) List() error {
 	var wg sync.WaitGroup
 	done := make(chan struct{})
 	wg.Add(1)
-	go Spinner(done, &wg)
+	go Spinner(done, &wg, "Decrypting the Vault")
 	masterKey, err := storage.LoadMasterKey(a.MasterKeyPath)
 	if err != nil {
 		return err
@@ -86,7 +86,9 @@ func (a *App) Add(service, username, password string) error {
 	var wg sync.WaitGroup
 	done := make(chan struct{})
 	wg.Add(1)
-	go Spinner(done, &wg)
+
+	spinnerText := fmt.Sprintf("Adding '%s' to the vault", service)
+	go Spinner(done, &wg, spinnerText)
 	masterKey, err := storage.LoadMasterKey(a.MasterKeyPath)
 	if err != nil {
 		return err
@@ -114,15 +116,16 @@ func (a *App) Add(service, username, password string) error {
 
 func (a *App) Gen(service, username string, sizeStr string) error {
 
-	var wg sync.WaitGroup
-	done := make(chan struct{})
-	wg.Add(1)
-	go Spinner(done, &wg)
-
 	size, err := strconv.Atoi(sizeStr)
 	if err != nil {
 		return fmt.Errorf("length must be a number")
 	}
+	var wg sync.WaitGroup
+	done := make(chan struct{})
+	wg.Add(1)
+	spinnerText := fmt.Sprintf("Generate password for: '%s'", service)
+	go Spinner(done, &wg, spinnerText)
+
 	randomPassword, err := encryption.GenerateRandomPassword(size)
 	if err != nil {
 		return err
@@ -142,8 +145,8 @@ func (a *App) DeleteEntry(service string) error {
 	var wg sync.WaitGroup
 	done := make(chan struct{})
 	wg.Add(1)
-	fmt.Println("Deleting service-> ", service)
-	go Spinner(done, &wg)
+	spinnerText := fmt.Sprintf("Deleting '%s' from the vault", service)
+	go Spinner(done, &wg, spinnerText)
 
 	masterKey, err := storage.LoadMasterKey(a.MasterKeyPath)
 	if err != nil {
