@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"pass/TUI"
 )
 
 type Command struct {
@@ -27,11 +28,11 @@ func New(version, vaultPath, masterKeyPath string) *App {
 
 	app.registerCommand("init", "   Create a vault", "pass init")
 	app.registerCommand("add", "    Add new entry to vault", "pass add -u username -p password")
-	app.registerCommand("del", " delete entry from the vault", "pass delete service")
+	app.registerCommand("del", "    delete entry from the vault", "pass delete service")
 	app.registerCommand("get", "    Get a credential", "pass get servicename -u username")
 	app.registerCommand("key", "    Get a master key", "pass key")
 	app.registerCommand("list", "   List all credentials", "pass list")
-	app.registerCommand("export", "   Export the vault and master key ", "pass export -p /path/ShouldBe/A/Folder")
+	app.registerCommand("export", " Export the vault and master key ", "pass export -p /path/ShouldBe/A/Folder")
 	app.registerCommand("gen", "    Generate a random password for service and username", "pass gen servicename -u username -l 12")
 	app.registerCommand("version", "cli version ", "pass version")
 	app.registerCommand("help", "   Help", "pass help")
@@ -39,7 +40,6 @@ func New(version, vaultPath, masterKeyPath string) *App {
 	return app
 }
 func (a *App) Run(args []string) error {
-
 	cmd, err := a.Parse(args[1:])
 	if err != nil {
 		return err
@@ -48,10 +48,7 @@ func (a *App) Run(args []string) error {
 	switch cmd.Name {
 
 	case "init":
-		err := a.Init()
-		if err != nil {
-			return err
-		}
+		a.Init()
 	case "add":
 		fmt.Println(cmd.Args)
 		err := a.Add(cmd.Args[0], cmd.Flags["u"], cmd.Flags["p"])
@@ -59,6 +56,10 @@ func (a *App) Run(args []string) error {
 			return err
 		}
 	case "get":
+		err := a.GetEntry(cmd.Args[0])
+		if err != nil {
+			return err
+		}
 		return nil
 	case "del":
 		err := a.DeleteEntry(cmd.Args[0])
@@ -86,7 +87,12 @@ func (a *App) Run(args []string) error {
 		}
 		return nil
 	case "version":
-		fmt.Println(a.Version)
+
+		box := TUI.NewBox(60, '╭', '╮', '╰', '╯')
+		box.SetTitle("Version")
+		dp := []TUI.DataPoint{}
+		dp = append(dp, TUI.DataPoint{Key: "Password manager Version ", Value: a.Version})
+		box.PrintData(dp)
 		return nil
 
 	case "export":

@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"pass/TUI"
 	"pass/encryption"
 	"pass/storage"
 	"strconv"
@@ -18,44 +19,70 @@ func (a *App) registerCommand(name, desc, example string) {
 }
 func (a *App) Help() {
 
-	fmt.Println("Usage:")
-	fmt.Println("Command  Description")
-	for _, cmd := range a.Commands {
-		fmt.Println("#====================================================================#")
-		fmt.Printf("%s  %s\n", cmd.Name, cmd.Description)
-		fmt.Printf("Example -> %s\n", cmd.Example)
+	box := TUI.NewBox(60, '╭', '╮', '╰', '╯')
+	box.SetTitle("Command ")
+
+	dp := []TUI.DataPoint{}
+	for _, entry := range a.Commands {
+		dp = append(dp, TUI.DataPoint{Key: entry.Name, Value: entry.Description})
 	}
+	box.PrintData(dp)
 }
-func (a *App) Init() error {
-	var wg sync.WaitGroup
+
+func (a *App) Init() {
+	box := TUI.NewBox(100, '╭', '╮', '╰', '╯')
 	done := make(chan struct{})
-	wg.Add(1)
-	go Spinner(done, &wg, "Initializing the Vault and Master Key")
 	_, err := os.Stat(a.VaultPath)
 	if err == nil {
-		return fmt.Errorf("vault does exist!")
+		box.SetTitle("Init")
+		dp := []TUI.DataPoint{}
+		dp = append(dp, TUI.DataPoint{Key: "Error", Value: "Vault does exist"})
+		box.PrintData(dp)
+		return
 	}
 	_, err = os.Stat(a.MasterKeyPath)
 	if err == nil {
-		return fmt.Errorf("master key does exist!")
+		box.SetTitle("Init")
+		dp := []TUI.DataPoint{}
+		dp = append(dp, TUI.DataPoint{Key: "Error", Value: "Master key does exist"})
+		box.PrintData(dp)
+		return
 	}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go Spinner(done, &wg, "Initializing the Vault and Master Key")
 	err = storage.SaveMasterKey(a.MasterKeyPath)
 	if err != nil {
-		return err
+		box.SetTitle("Init")
+		dp := []TUI.DataPoint{}
+		dp = append(dp, TUI.DataPoint{Key: "Error", Value: "Problem Loading Master key"})
+		box.PrintData(dp)
+		return
 	}
 	masterKey, err := storage.LoadMasterKey(a.MasterKeyPath)
 	if err != nil {
-		return err
+		box.SetTitle("Init")
+		dp := []TUI.DataPoint{}
+		dp = append(dp, TUI.DataPoint{Key: "Error", Value: "Problem Loading Vault"})
+		box.PrintData(dp)
+		return
 	}
 	v := encryption.NewVault()
 	err = storage.SaveVault(v, masterKey, a.VaultPath)
 	if err != nil {
-		return err
+		box.SetTitle("Init")
+		dp := []TUI.DataPoint{}
+		dp = append(dp, TUI.DataPoint{Key: "Error", Value: "Problem Saving Vault"})
+		box.PrintData(dp)
+		return
 	}
 	close(done)
 	wg.Wait()
-	fmt.Printf("%s and %s created.", a.VaultPath, a.MasterKeyPath)
-	return nil
+	txt := fmt.Sprintf("%s and %s created.", a.VaultPath, a.MasterKeyPath)
+	dp := []TUI.DataPoint{}
+	dp = append(dp, TUI.DataPoint{Key: "Success", Value: txt})
+	box.PrintData(dp)
+	fmt.Println()
 }
 
 func (a *App) List() error {
@@ -64,6 +91,7 @@ func (a *App) List() error {
 	done := make(chan struct{})
 	wg.Add(1)
 	go Spinner(done, &wg, "Decrypting the Vault")
+
 	masterKey, err := storage.LoadMasterKey(a.MasterKeyPath)
 	if err != nil {
 		return err
@@ -79,15 +107,17 @@ func (a *App) List() error {
 		fmt.Printf("Vault is empty\n")
 		return nil
 	}
-	fmt.Println("#======================================================#")
-	for _, entry := range v.Entries {
-		fmt.Println("Service: ", entry.Service)
-		fmt.Println("Username: ", entry.Username)
-		fmt.Println("Password: ", entry.Password)
-		fmt.Println("#======================================================#")
-	}
-	return nil
 
+	box := TUI.NewBox(60, '╭', '╮', '╰', '╯')
+	box.SetTitle("Vault")
+	dp := []TUI.DataPoint{}
+	for _, entry := range v.Entries {
+		dp = append(dp, TUI.DataPoint{Key: "Service ", Value: entry.Service})
+		dp = append(dp, TUI.DataPoint{Key: "Username", Value: entry.Username})
+		dp = append(dp, TUI.DataPoint{Key: "Password", Value: entry.Password})
+	}
+	box.PrintData(dp)
+	return nil
 }
 
 func (a *App) Add(service, username, password string) error {
@@ -120,6 +150,14 @@ func (a *App) Add(service, username, password string) error {
 	if err != nil {
 		return err
 	}
+
+	box := TUI.NewBox(60, '╭', '╮', '╰', '╯')
+	box.SetTitle("Entry added")
+	dp := []TUI.DataPoint{}
+	dp = append(dp, TUI.DataPoint{Key: "Service ", Value: service})
+	dp = append(dp, TUI.DataPoint{Key: "Username", Value: username})
+	dp = append(dp, TUI.DataPoint{Key: "Password", Value: password})
+	box.PrintData(dp)
 	return nil
 }
 
@@ -137,11 +175,12 @@ func (a *App) Gen(service, username string, sizeStr string) error {
 	if err != nil {
 		return err
 	}
-	m := make(map[string]string)
-	m["Service"] = service
-	m["Username"] = username
-	m["Password"] = randomPassword
-	if !Confirmation("gen", m) {
+
+	dp := []TUI.DataPoint{}
+	dp = append(dp, TUI.DataPoint{Key: "Service ", Value: service})
+	dp = append(dp, TUI.DataPoint{Key: "Username", Value: username})
+	dp = append(dp, TUI.DataPoint{Key: "Password", Value: randomPassword})
+	if !Confirmation("generating password", dp) {
 		return nil
 	}
 
@@ -156,7 +195,9 @@ func (a *App) DeleteEntry(service string) error {
 	done := make(chan struct{})
 	wg.Add(1)
 	spinnerText := fmt.Sprintf("Deleting '%s' from the vault", service)
-	if !Confirmation("del", map[string]string{"Service": service}) {
+	dp := []TUI.DataPoint{}
+	dp = append(dp, TUI.DataPoint{Key: "Service ", Value: service})
+	if !Confirmation("Delete", dp) {
 		return nil
 	}
 	go Spinner(done, &wg, spinnerText)
@@ -171,6 +212,11 @@ func (a *App) DeleteEntry(service string) error {
 	}
 	err = v.DeleteEntry(service)
 	if err != nil {
+		box := TUI.NewBox(60, '╭', '╮', '╰', '╯')
+		box.SetTitle("Deleting " + service)
+		dp := []TUI.DataPoint{}
+		dp = append(dp, TUI.DataPoint{Key: "Error", Value: err.Error()})
+		box.PrintData(dp)
 		return err
 	}
 	err = storage.SaveVault(v, masterKey, a.VaultPath)
@@ -198,13 +244,15 @@ func (a *App) GetEntry(service string) error {
 		return err
 	}
 
-	fmt.Println("#==================================#")
+	box := TUI.NewBox(60, '╭', '╮', '╰', '╯')
+	box.SetTitle("Result For: " + service)
+	dp := []TUI.DataPoint{}
 	for _, entry := range entries {
-		fmt.Println("Service: ", entry.Service)
-		fmt.Println("Username: ", entry.Username)
-		fmt.Println("Password: ", entry.Password)
-		fmt.Println("#==================================#")
+		dp = append(dp, TUI.DataPoint{Key: "Service ", Value: entry.Service})
+		dp = append(dp, TUI.DataPoint{Key: "Username", Value: entry.Username})
+		dp = append(dp, TUI.DataPoint{Key: "Password", Value: entry.Password})
 	}
+	box.PrintData(dp)
 	return nil
 }
 func (a *App) GetMasterKey() error {
@@ -219,17 +267,19 @@ func (a *App) GetMasterKey() error {
 		return err
 	}
 
-	fmt.Println("#========================================================#")
-	fmt.Println("master key: ", masterKey)
-	fmt.Println("#========================================================#")
+	box := TUI.NewBox(60, '╭', '╮', '╰', '╯')
+	box.SetTitle("Key")
+	dp := []TUI.DataPoint{}
+	dp = append(dp, TUI.DataPoint{Key: "Master Key", Value: masterKey})
+	box.PrintData(dp)
 	return nil
 }
 
 func (a *App) Export(exportPath string) error {
-	m := make(map[string]string)
-	m["vault To: "] = exportPath + "'/Vault.vault"
-	m["master key To: "] = exportPath + "/master.key"
-	Confirmation("export", m)
+	dp := []TUI.DataPoint{}
+	dp = append(dp, TUI.DataPoint{Key: "vault to: ", Value: exportPath + "/Vault.vault"})
+	dp = append(dp, TUI.DataPoint{Key: "master key To: ", Value: exportPath + "/Master.key"})
+	Confirmation("export", dp)
 	err := storage.ExportVault(exportPath, a.VaultPath)
 	if err != nil {
 		return err

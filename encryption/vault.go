@@ -36,7 +36,7 @@ func (v *Vault) DeleteEntry(service string) error {
 		}
 	}
 	if len(v.Entries) == len(newEntries) {
-		return fmt.Errorf("\n%s not found", service)
+		return fmt.Errorf("%s not found", service)
 	}
 	v.Entries = newEntries
 	return nil

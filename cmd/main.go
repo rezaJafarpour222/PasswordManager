@@ -6,7 +6,7 @@ import (
 	"pass/cli"
 )
 
-const VERSION string = "1.0.0"
+const VERSION string = "1.1.0"
 
 func main() {
 
