@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"pass/TUI"
 )
 
@@ -45,12 +44,15 @@ func (a *App) Run(args []string) error {
 		return err
 	}
 
+	box := TUI.NewBox(60, '╭', '╮', '╰', '╯')
 	switch cmd.Name {
 
 	case "init":
-		a.Init()
+		err := a.Init()
+		if err != nil {
+			return err
+		}
 	case "add":
-		fmt.Println(cmd.Args)
 		err := a.Add(cmd.Args[0], cmd.Flags["u"], cmd.Flags["p"])
 		if err != nil {
 			return err
@@ -88,7 +90,6 @@ func (a *App) Run(args []string) error {
 		return nil
 	case "version":
 
-		box := TUI.NewBox(60, '╭', '╮', '╰', '╯')
 		box.SetTitle("Version")
 		dp := []TUI.DataPoint{}
 		dp = append(dp, TUI.DataPoint{Key: "Password manager Version ", Value: a.Version})

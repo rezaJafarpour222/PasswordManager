@@ -47,3 +47,18 @@ func (b *Box) PrintData(data []DataPoint) {
 	b.printer.WithPrimary().PrintText(string(b.LeftDownRune) + b.printer.Generate("─", b.Size) + string(b.RightDownRune))
 	fmt.Println()
 }
+func (b *Box) PrintError(data []DataPoint) {
+	b.printer.WithPrimary().PrintText(string(b.LeftUpRune) + b.printer.Generate("─", b.Size) + string(b.RightUpRune))
+	fmt.Println()
+	for _, field := range data {
+		text := field.Key
+		b.printer.WithPrimary().PrintText(text + ": ")
+		b.printer.WithDanger().PrintText(
+			field.Value + b.printer.Generate(" ", b.Size-(len(text)+len(field.Value))-1),
+		)
+		b.printer.WithPrimary().PrintText("│")
+		fmt.Println()
+	}
+	b.printer.WithPrimary().PrintText(string(b.LeftDownRune) + b.printer.Generate("─", b.Size) + string(b.RightDownRune))
+	fmt.Println()
+}

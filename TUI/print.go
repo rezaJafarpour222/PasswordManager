@@ -32,7 +32,7 @@ func (p *Print) WithAccent() *Print {
 }
 
 func (p *Print) WithDanger() *Print {
-	fmt.Print(Catppuccin["Crust"].Foreground())
+	fmt.Print(Catppuccin["Maroon"].Foreground())
 	return p
 }
 

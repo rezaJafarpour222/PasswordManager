@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"os"
+	"pass/TUI"
 	"pass/cli"
 )
 
@@ -14,7 +14,11 @@ func main() {
 	err := app.Run(os.Args)
 
 	if err != nil {
-		fmt.Println(err)
+
+		box := TUI.NewBox(60, '╭', '╮', '╰', '╯')
+		dp := []TUI.DataPoint{}
+		dp = append(dp, TUI.DataPoint{Key: "Error ", Value: err.Error()})
+		box.PrintError(dp)
 	}
 
 }
