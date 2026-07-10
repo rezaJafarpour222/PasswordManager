@@ -41,7 +41,7 @@ func (a *App) Init() error {
 	}
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go Spinner(done, &wg, "Initializing the Vault and Master Key")
+	go TUI.Spinner(done, &wg, "Initializing the Vault and Master Key")
 	err = storage.SaveMasterKey(a.MasterKeyPath)
 	if err != nil {
 		return fmt.Errorf("Problem Loading Master key")
@@ -71,7 +71,7 @@ func (a *App) List() error {
 	var wg sync.WaitGroup
 	done := make(chan struct{})
 	wg.Add(1)
-	go Spinner(done, &wg, "Decrypting the Vault")
+	go TUI.Spinner(done, &wg, "Decrypting the Vault")
 
 	masterKey, err := storage.LoadMasterKey(a.MasterKeyPath)
 	if err != nil {
@@ -107,7 +107,7 @@ func (a *App) Add(service, username, password string) error {
 	wg.Add(1)
 
 	spinnerText := fmt.Sprintf("Adding '%s' to the vault", service)
-	go Spinner(done, &wg, spinnerText)
+	go TUI.Spinner(done, &wg, spinnerText)
 	masterKey, err := storage.LoadMasterKey(a.MasterKeyPath)
 	if err != nil {
 		return err
@@ -180,7 +180,7 @@ func (a *App) DeleteEntry(service string) error {
 	if !Confirmation("Delete", dp) {
 		return nil
 	}
-	go Spinner(done, &wg, spinnerText)
+	go TUI.Spinner(done, &wg, spinnerText)
 	masterKey, err := storage.LoadMasterKey(a.MasterKeyPath)
 	if err != nil {
 		close(done)

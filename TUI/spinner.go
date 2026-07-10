@@ -1,8 +1,7 @@
-package cli
+package TUI
 
 import (
 	"fmt"
-	"pass/TUI"
 	"sync"
 	"time"
 )
@@ -17,21 +16,13 @@ func Spinner(done <-chan struct{}, wg *sync.WaitGroup, spinnerText string) {
 	}
 	i := 0
 
-	printer := TUI.Print{}
+	printer := Print{}
 	for {
 		select {
 		case <-done:
 			fmt.Print("\r\033[K")
 			return
 		default:
-			// fmt.Printf("\r%s%c%s %s%s%s",
-			// 	TUI.Colors["Cyan"].Foreground(),
-			// 	frames[i],
-			// 	TUI.Reset,
-			// 	TUI.Colors["Turquoise"].Foreground(),
-			// 	spinnerText,
-			// 	TUI.Reset,
-			// )
 			printer.WithAccent().PrintText("\r" + string(frames[i]))
 			printer.WithPrimary().PrintText(spinnerText)
 			i = (i + 1) % len(frames)
