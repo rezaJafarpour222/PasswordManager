@@ -96,7 +96,6 @@ func ExportVault(exportPath, vaultPath string) error {
 		return err
 	}
 	os.WriteFile(exportPath+"/Vault.vault", data, 0600)
-	fmt.Println("Vault added to: ", exportPath)
 	return nil
 }
 func ExportMasterKey(exportPath, masterKeyPath string) error {
@@ -109,6 +108,5 @@ func ExportMasterKey(exportPath, masterKeyPath string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Master added to: ", exportPath)
 	return nil
 }

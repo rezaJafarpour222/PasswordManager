@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"pass/TUI"
-	"pass/encryption"
 	"pass/protocol"
 	"pass/storage"
 	"sync"
@@ -33,36 +32,29 @@ func (a *App) Help() {
 
 func (a *App) Init() error {
 	done := make(chan struct{})
-	_, err := os.Stat(a.VaultPath)
-	if err == nil {
-		return fmt.Errorf("Vault does exist")
-	}
-	_, err = os.Stat(a.MasterKeyPath)
-	if err == nil {
-		return fmt.Errorf("Master key does exist")
+
+	req := protocol.Request{
+		Action: "init",
 	}
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go TUI.Spinner(done, &wg, "Initializing the Vault and Master Key")
-	err = storage.SaveMasterKey(a.MasterKeyPath)
+	go TUI.Spinner(done, &wg, "Initializing the Vault and Master Key\n")
+
+	res, err := protocol.Dial(req)
 	if err != nil {
-		return fmt.Errorf("Problem Loading Master key")
+		return err
 	}
-	masterKey, err := storage.LoadMasterKey(a.MasterKeyPath)
-	if err != nil {
-		return fmt.Errorf("Problem Loading Vault")
-	}
-	v := encryption.NewVault()
-	err = storage.SaveVault(v, masterKey, a.VaultPath)
-	if err != nil {
-		return fmt.Errorf("Problem Saving Vault")
+
+	if res.Error {
+		var msg string
+		json.Unmarshal(res.Payload, &msg)
+		return errors.New(msg)
 	}
 	close(done)
-	box := TUI.NewBox(60, '╭', '╮', '╰', '╯')
 	wg.Wait()
-	txt := fmt.Sprintf("%s and %s created.", a.VaultPath, a.MasterKeyPath)
+	box := TUI.NewBox(60, '╭', '╮', '╰', '╯')
 	dp := []TUI.DataPoint{}
-	dp = append(dp, TUI.DataPoint{Key: "Success", Value: txt})
+	dp = append(dp, TUI.DataPoint{Key: "Success", Value: string(res.Payload)})
 	box.PrintData(dp)
 	fmt.Println()
 	return nil
@@ -177,67 +169,65 @@ func (a *App) DeleteEntry(service string) error {
 	var wg sync.WaitGroup
 	done := make(chan struct{})
 	wg.Add(1)
-	spinnerText := fmt.Sprintf("Deleting '%s' from the vault", service)
+	spinnerText := fmt.Sprintf("Deleting '%s' from the vault\n", service)
 	dp := []TUI.DataPoint{}
 	dp = append(dp, TUI.DataPoint{Key: "Service ", Value: service})
 	if !Confirmation("Delete", dp) {
 		return nil
 	}
 	go TUI.Spinner(done, &wg, spinnerText)
-	masterKey, err := storage.LoadMasterKey(a.MasterKeyPath)
-	if err != nil {
-		close(done)
-		wg.Wait()
-		return err
-	}
-	v, err := storage.LoadVault(masterKey, a.VaultPath)
-	if err != nil {
-		close(done)
-		wg.Wait()
-		return err
-	}
-	err = v.DeleteEntryByService(service)
-	if err != nil {
-		close(done)
-		wg.Wait()
-		return err
-	}
-	err = storage.SaveVault(v, masterKey, a.VaultPath)
-	if err != nil {
-		close(done)
-		wg.Wait()
-		return err
-	}
 
+	req := protocol.Request{
+		Action:  "del",
+		Service: service,
+	}
+	res, err := protocol.Dial(req)
+	if err != nil {
+		return err
+	}
+	if res.Error {
+		var msg string
+		json.Unmarshal(res.Payload, &msg)
+		return errors.New(msg)
+	}
+	_, err = protocol.DeserializeEntry(res)
+	if err != nil {
+		return err
+	}
 	close(done)
 	wg.Wait()
+
 	return nil
 }
 
 func (a *App) GetEntry(service string) error {
 
-	masterKey, err := storage.LoadMasterKey(a.MasterKeyPath)
+	req := protocol.Request{
+		Action:  "get",
+		Service: service,
+	}
+	res, err := protocol.Dial(req)
 	if err != nil {
 		return err
 	}
-	v, err := storage.LoadVault(masterKey, a.VaultPath)
+	if res.Error {
+		var msg string
+		json.Unmarshal(res.Payload, &msg)
+		return errors.New(msg)
+	}
+	entries, err := protocol.DeserializeEntries(res)
 	if err != nil {
 		return err
 	}
-	entries, err := v.GetEntry(service)
-	if err != nil {
-		return err
-	}
-
 	box := TUI.NewBox(60, '╭', '╮', '╰', '╯')
 	box.SetTitle("Result For: " + service)
-	dp := []TUI.DataPoint{}
 	for _, entry := range entries {
+		dp := []TUI.DataPoint{}
 		dp = append(dp, TUI.DataPoint{Key: "Service ", Value: entry.Service})
 		dp = append(dp, TUI.DataPoint{Key: "Username", Value: entry.Username})
 		dp = append(dp, TUI.DataPoint{Key: "Password", Value: entry.Password})
+		box.PrintData(dp)
 	}
-	box.PrintData(dp)
 	return nil
 }
 func (a *App) GetMasterKey() error {
@@ -261,17 +251,31 @@ func (a *App) GetMasterKey() error {
 }
 
 func (a *App) Export(exportPath string) error {
+
 	dp := []TUI.DataPoint{}
 	dp = append(dp, TUI.DataPoint{Key: "vault to: ", Value: exportPath + "/Vault.vault"})
 	dp = append(dp, TUI.DataPoint{Key: "master key To: ", Value: exportPath + "/Master.key"})
-	Confirmation("export", dp)
-	err := storage.ExportVault(exportPath, a.VaultPath)
+	if !Confirmation("export", dp) {
+		return nil
+	}
+	req := protocol.Request{
+		Action:     "export",
+		ExportPath: exportPath,
+	}
+	res, err := protocol.Dial(req)
 	if err != nil {
 		return err
 	}
-	err = storage.ExportMasterKey(exportPath, a.MasterKeyPath)
-	if err != nil {
-		return err
+	if res.Error {
+		var msg string
+		json.Unmarshal(res.Payload, &msg)
+		return errors.New(msg)
 	}
+
+	box := TUI.NewBox(60, '╭', '╮', '╰', '╯')
+	box.SetTitle("Export")
+	dp = []TUI.DataPoint{}
+	dp = append(dp, TUI.DataPoint{Key: "Result", Value: string(res.Payload)})
+	box.PrintData(dp)
 	return nil
 }

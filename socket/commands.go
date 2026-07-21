@@ -8,6 +8,32 @@ import (
 	"strconv"
 )
 
+func Init(path string) error {
+	vaultPath := path + "Vault.vault"
+	masterKeyPath := path + "Master.key"
+	_, err := os.Stat(vaultPath)
+	if err == nil {
+		return fmt.Errorf("Vault does exist")
+	}
+	_, err = os.Stat(masterKeyPath)
+	if err == nil {
+		return fmt.Errorf("Master key does exist")
+	}
+	err = storage.SaveMasterKey(masterKeyPath)
+	if err != nil {
+		return err
+	}
+	masterKey, err := storage.LoadMasterKey(vaultPath)
+	if err != nil {
+		return err
+	}
+	v := encryption.NewVault()
+	err = storage.SaveVault(v, masterKey, vaultPath)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func Gen(service, username string, sizeStr string, v *encryption.Vault) (encryption.Entry, error) {
 
 	size, err := strconv.Atoi(sizeStr)
@@ -44,6 +70,13 @@ func Add(service, username, password string, v *encryption.Vault) {
 func List(v *encryption.Vault) []encryption.Entry {
 	return v.Entries
 }
+func GetEntry(service string, v *encryption.Vault) ([]encryption.Entry, error) {
+	entries, err := v.GetEntry(service)
+	if err != nil {
+		return nil, err
+	}
+	return entries, nil
+}
 
 func DeleteByUserName(username string, v *encryption.Vault) error {
 	err := v.DeleteEntryByUsername(username)
@@ -63,40 +96,15 @@ func DeleteByService(service string, v *encryption.Vault) error {
 
 func Export(exportPath, currentPath string) error {
 
-	err := storage.ExportVault(exportPath, currentPath)
+	vaultPath := currentPath + "Vault.vault"
+	masterKeyPath := currentPath + "Master.key"
+	err := storage.ExportVault(exportPath, vaultPath)
 	if err != nil {
 		return err
 	}
-	err = storage.ExportMasterKey(exportPath, currentPath)
+	err = storage.ExportMasterKey(exportPath, masterKeyPath)
 	if err != nil {
 		return err
-	}
-	return nil
-}
-
-func Init(path string) error {
-	vaultPath := path + "vault.Vault"
-	masterKeyPath := path + "Master.key"
-	_, err := os.Stat(vaultPath)
-	if err == nil {
-		return fmt.Errorf("Vault does exist")
-	}
-	_, err = os.Stat(masterKeyPath)
-	if err == nil {
-		return fmt.Errorf("Master key does exist")
-	}
-	err = storage.SaveMasterKey(masterKeyPath)
-	if err != nil {
-		return fmt.Errorf("Problem Loading Master key")
-	}
-	masterKey, err := storage.LoadMasterKey(vaultPath)
-	if err != nil {
-		return fmt.Errorf("Problem Loading Vault")
-	}
-	v := encryption.NewVault()
-	err = storage.SaveVault(v, masterKey, vaultPath)
-	if err != nil {
-		return fmt.Errorf("Problem Saving Vault")
 	}
 	return nil
 }

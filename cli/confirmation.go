@@ -17,6 +17,7 @@ func Confirmation(operation string, dp []TUI.DataPoint) bool {
 	var input string
 	fmt.Scan(&input)
 	if strings.ToLower(input) == "y" {
+		fmt.Println()
 		return true
 	}
 	printer.WithSecondary().PrintText(operation + " Canceled")
