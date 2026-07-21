@@ -31,6 +31,7 @@ func main() {
 		if err != nil {
 			continue
 		}
+		fmt.Println("Request comming in")
 		socket.Handle(conn, masterKey, &vault, "Vault.vault")
 	}
 }
