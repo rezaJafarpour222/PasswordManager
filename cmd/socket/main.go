@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -32,10 +31,6 @@ func main() {
 		if err != nil {
 			continue
 		}
-		err = socket.Handle(conn, masterKey, &vault, "Vault.vault")
-		if err != nil {
-			fmt.Println(err)
-			json.NewEncoder(conn).Encode(err)
-		}
+		socket.Handle(conn, masterKey, &vault, "Vault.vault")
 	}
 }

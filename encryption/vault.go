@@ -28,7 +28,7 @@ func (v *Vault) AddEntry(e Entry) {
 	v.Entries = append(v.Entries, e)
 }
 
-func (v *Vault) DeleteEntry(service string) error {
+func (v *Vault) DeleteEntryByService(service string) error {
 	newEntries := make([]Entry, 0, len(v.Entries))
 	for _, e := range v.Entries {
 		if e.Service != service {
@@ -37,6 +37,20 @@ func (v *Vault) DeleteEntry(service string) error {
 	}
 	if len(v.Entries) == len(newEntries) {
 		return fmt.Errorf("%s not found", service)
+	}
+	v.Entries = newEntries
+	return nil
+}
+
+func (v *Vault) DeleteEntryByUsername(username string) error {
+	newEntries := make([]Entry, 0, len(v.Entries))
+	for _, e := range v.Entries {
+		if e.Username != username {
+			newEntries = append(newEntries, e)
+		}
+	}
+	if len(v.Entries) == len(newEntries) {
+		return fmt.Errorf("%s not found", username)
 	}
 	v.Entries = newEntries
 	return nil

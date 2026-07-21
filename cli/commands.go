@@ -193,7 +193,7 @@ func (a *App) DeleteEntry(service string) error {
 		wg.Wait()
 		return err
 	}
-	err = v.DeleteEntry(service)
+	err = v.DeleteEntryByService(service)
 	if err != nil {
 		close(done)
 		wg.Wait()
